@@ -1,0 +1,27 @@
+{
+  "summary": "COLLAUDO FINALE UI end-to-end eseguito su REGISTRO CORRISPETTIVI (mobile 390x844, no auth) tramite Playwright contro il preview URL. Flusso coperto: (1) creazione registro 'COLLAUDO UI' anno 2026 con 6 colonne (RISTORANTE/BAR/ALIMENTARI 22/ALIMENTARI 10/BOMBOLE/ALIMENTARI 4) e verifica ORDINE intestazioni register-table = ['Data','Totale Corrisp.','IVA 10% Ristorante','IVA 10% Bar','IVA 22% Alimentari','IVA 10% Alimentari','Bombole','IVA 4% Alimentari','Stato',''] (Totale Corrisp. NON in fondo, OK). (2) new-day -> read-azzeramento-btn apre camera-overlay con testo 'Posiziona lo scontrino dentro il riquadro' (verificato); z-file-input montato; upload /app/test_assets/azzeramento.jpg -> overlay ocr-loading visibile; dopo ~5-10s Azzeramento 1 letto = 2.757,40. (3) Secondo azzeramento stessa giornata via '+ Aggiungi azzeramento' + z-file-input -> '2 letti'. (4) read-reparti-btn + rep-file-input su reparti.jpg (ruotata) -> OCR+mapping OK. (5) go-confirm-btn: z-total = € 5514,80, z-report-input-0 e z-report-input-1 EDITABILI, elimina z-report-delete-1 -> z-total ricalcolato subito a € 2757,40, quadratura-difference = € 0,00. Data impostata a 2026-08-15, save-entry-btn OK. (6) In register-table (tab Ago) ESATTAMENTE 1 riga per data con Totale Corrisp. 2757,40 e badge 'Verificato'. (7) Persistenza: Home mostra register-item-<id>; riapertura registro -> headers invariati; cambio month-tab-1 -> month-tab-8; edit-entry-<id> ricarica z-report-input-0 = 2757,40 e tutti e 6 entry-col-input-<colId> popolati (2353,40/201,90/80,05/42,40/41,00/38,65); quadratura differenza € 0,00 a reload. (8) Modifica manuale: +1,00 su reparto -> quadratura-card NON_QUADRATO (titolo 'Importi non corrispondenti', diff € -1,00); ripristino -> diff € 0,00 ('Quadratura corretta'). (9) Duplicate add-to-existing: new-day -> manual-entry-btn -> confirm-add-azz-manual -> 10,00 su data 2026-08-15 -> save-entry-btn apre duplicate-dialog con dup-add-azz-btn/dup-open-existing-btn/dup-cancel-btn; dup-add-azz-btn merge -> API conferma UNA sola entry con z_reports=2 e total_receipts_cents=276740 (€ 2767,40), register-table mostra ancora 1 sola riga per 15/08/2026 con nuovo totale 2767,40 e stato 'Non quadrato' (coerente perche' 2767,40 vs reparti 2757,40 = +10). (10) Export: GET /api/registers/{id}/export/pdf -> 200 (2418 bytes), /export/excel -> 200 (6006 bytes); export-pdf-btn / export-excel-btn / print-btn tutti presenti e cliccabili (aprono nuova scheda via window.open). (11) Camera: camera-close-btn chiude l'overlay (overlay nascosto dopo click); camera-gallery-btn presente. Pulizia: registro 'COLLAUDO UI' eliminato (DELETE 200) e stale 'COLLAUDO 2026' rimosso.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_quadratura.py (prev iter)",
+    "/app/test_reports/iteration_3.json"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "NewDay.jsx: QuadraturaCard title text ('Quadratura corretta'/'Importi non corrispondenti'/'Da controllare') differisce dalla costante di stato ('VERIFICATO'/'NON_QUADRATO'/'DA_CONTROLLARE'). Chi scrive test deve conoscere entrambi; nessun bug applicativo.",
+    "NewDay.jsx: back-btn in RegisterView torna '/', in NewDay confirm->intro poi '/register/{id}'. Dopo 'save-entry-btn' si atterra su RegisterView con toast 'Giornata salvata' visibile per ~2.5s; il toast puo' sovrapporsi parzialmente alla sticky header su mobile, consigliato z-index gerarchico (minor).",
+    "Dopo dup-add-azz-btn si naviga all'edit entry (/register/{id}/entry/{eid}) invece che alla lista; comportamento utile ma dovrebbe essere documentato nel copy del dialogo."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "n/a (coperto in iter 1-3, 27/27)", "frontend": "100% - tutti i flussi richiesti verificati" },
+  "test_credentials": "n/a (no auth)",
+  "seed_data_creation": "Creati e cancellati 'COLLAUDO UI' (reg_id=c6156245-be68-4fc1-8eff-2682dc2a124d) e un residuo 'COLLAUDO 2026' lasciato dai test backend.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "La costante status interna e' VERIFICATO/NON_QUADRATO/DA_CONTROLLARE, ma il TITOLO visualizzato dentro quadratura-card e' 'Quadratura corretta'/'Importi non corrispondenti'/'Da controllare'. Per asserire lo stato quadrato, controllare il valore numerico di quadratura-difference ('€ 0,00') piuttosto che il testo del titolo. Dopo dup-add-azz-btn si viene reindirizzati a /register/{id}/entry/{eid} (edit), non alla lista. Export endpoint path: /api/registers/{id}/export/pdf e /export/excel (no estensione). Camera overlay funziona in headless usando i file input nascosti z-file-input e rep-file-input (set_input_files diretto senza click sulla gallery). OCR Gemini reale ~5-15s per immagine: usare timeout >=60s.",
+  "rca of the issue": "Nessun difetto rilevato. Tutti i requisiti del collaudo UI sono soddisfatti: ordine colonne, ocr-loading, multi-azzeramento, UNA riga per data, persistenza completa (azzeramenti, reparti, header), ricalcolo quadratura live su edit, duplicate add-to-existing con merge lato backend, export PDF/Excel/Stampa e chiusura overlay fotocamera."
+}

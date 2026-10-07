@@ -1,0 +1,106 @@
+{
+  "project_name": "Registro Corrispettivi",
+  "theme": "light",
+  "archetype": "Swiss & High-Contrast / Functional Utility",
+  "typography": {
+    "headings": {
+      "font": "Manrope",
+      "import_url": "https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap",
+      "rules": "Use for all headings. Keep tracking tight (tracking-tight). Max size text-4xl on mobile, text-5xl on desktop."
+    },
+    "body": {
+      "font": "IBM Plex Sans",
+      "import_url": "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap",
+      "rules": "Clean, highly legible font for tables, forms, and OCR data."
+    },
+    "hierarchy": {
+      "h1": "text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900",
+      "h2": "text-2xl md:text-3xl font-bold tracking-tight text-slate-900",
+      "h3": "text-xl font-semibold text-slate-800",
+      "body": "text-base text-slate-600",
+      "small": "text-sm font-medium uppercase tracking-[0.05em] text-slate-500"
+    }
+  },
+  "colors": {
+    "background": {
+      "app": "bg-slate-50",
+      "card": "bg-white"
+    },
+    "primary": {
+      "bg": "bg-slate-900",
+      "text": "text-white",
+      "hover": "hover:bg-slate-800"
+    },
+    "borders": "border-slate-200",
+    "status": {
+      "VERIFICATO": {
+        "bg": "bg-emerald-50",
+        "text": "text-emerald-700",
+        "border": "border-emerald-200",
+        "icon": "CheckCircle"
+      },
+      "DA_CONTROLLARE": {
+        "bg": "bg-amber-50",
+        "text": "text-amber-700",
+        "border": "border-amber-200",
+        "icon": "AlertTriangle"
+      },
+      "NON_QUADRATO": {
+        "bg": "bg-red-50",
+        "text": "text-red-700",
+        "border": "border-red-200",
+        "icon": "XCircle"
+      }
+    }
+  },
+  "layouts": {
+    "global": "Mobile-first approach. For desktop screens, constrain main content to a max-width container (e.g., max-w-lg or max-w-2xl) to mimic a mobile app feel, or use a responsive dashboard layout if appropriate. Maintain p-4 or p-6 padding on mobile.",
+    "home": "Vertical stack of large, prominent action buttons (min-h-[64px]) for 'Crea Nuovo Registro' and 'Apri Registro Esistente'. Below, a list of recent registers.",
+    "register_table": "Horizontal scrollable container for the table (overflow-x-auto) to accommodate configurable columns. The first column (DATA) must be sticky (sticky left-0 bg-white z-10). Include monthly total rows.",
+    "wizard_flow": "Use step-by-step screens (wizard) for creating registers and the daily OCR flow (Azzeramento -> Reparti -> Conferma). Focus on one task per screen."
+  },
+  "components": {
+    "buttons": "Large touch targets (h-14 or h-16) for primary actions on mobile. rounded-xl radius. Active state scaling (active:scale-[0.98]).",
+    "inputs": "Large hit areas (h-12). rounded-lg borders. Use distinct focus rings (focus:ring-2 focus:ring-slate-900 focus:outline-none).",
+    "cards": "Subtle shadows (shadow-sm) with 1px border (border-slate-200). rounded-2xl for a friendly, modern mobile app feel.",
+    "status_badges": "Pill-shaped (rounded-full). Must include BOTH color and an icon for accessibility. Inline flex, items center, gap-1.5, px-2.5, py-1, text-sm font-semibold.",
+    "navigation": "Sticky bottom bar or simple top header (sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200) with a 'Back' button and page title.",
+    "icons": "Use lucide-react for all standard icons."
+  },
+  "motion": {
+    "buttons": "transition-transform duration-200 ease-out active:scale-95 hover:shadow-md",
+    "page_transitions": "If using framer-motion, simple fade and slight slide-up (initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}).",
+    "drawers_modals": "Slide up from bottom for mobile (Action Sheets/Drawers) rather than centered modals when possible."
+  },
+  "accessibility": {
+    "touch_targets": "Minimum 48x48px for all interactive elements.",
+    "contrast": "Ensure status colors have sufficient contrast ratio (text-emerald-700 on bg-emerald-50 is WCAG AA). Do not rely solely on color to convey status; always use icons and text labels (Verificato, Da Controllare, Non Quadrato).",
+    "testing": "All interactive and key informational elements MUST include a data-testid attribute in kebab-case."
+  },
+  "instructions_to_main_agent": [
+    "You are building an Italian mobile-first utility app. Use Italian for all user-facing text.",
+    "File format MUST be .js or .jsx, NOT .tsx (unless the project is natively configured for TS).",
+    "Focus heavily on the mobile experience: large inputs, clear validation, prominent buttons.",
+    "For the OCR / Camera flow, simulate a camera interface or provide a stylized upload area. For the confirmation screen, display a split view or card showing the extracted values vs the expected totals, allowing manual overrides with big, tappable input fields.",
+    "For the Register Table, ensure the 'Data' column is sticky on the left during horizontal scroll. Implement the monthly tabs for navigation.",
+    "The Reconciliation (Quadratura) logic is critical: show a clear Result Card. If Totale Azzeramento != Totale Reparti, show NON_QUADRATO (Red) or DA_CONTROLLARE (Yellow). If they match, show VERIFICATO (Green).",
+    "Use Shadcn UI components where possible, but customize their classes to match the rounded-xl mobile friendly aesthetic.",
+    "Use 'sonner' for toast notifications (e.g., 'Salvataggio completato')."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "You tend to converge toward generic, 'on distribution' outputs. In frontend design, this creates what users call the 'AI slop' aesthetic. Avoid this: make creative, distinctive frontends that surprise and delight.",
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients.",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy.",
+    "Use glass-morphism effects with backdrop filters (12-24px blur).",
+    "You MUST NOT apply universal transition. Eg: transition: all. This results in breaking transforms. Always add transitions for specific interactive elements.",
+    "You MUST NOT center align the app container, ie do not add .App { text-align: center; } in the css file.",
+    "Always use modern button styles like pill-shaped, or sharp button with interaction animations & color relevant to the app style.",
+    "NEVER: use AI assistant Emoji characters like 🤖🧠💭💡🔮🎯 etc for icons.",
+    "Every interaction needs micro-animations - hover states, transitions, parallax effects, and entrance animations. Static = dead.",
+    "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
+    "Prioritize using pre-existing components from src/components/ui when applicable.",
+    "Create new components that match the style and conventions of existing components when needed.",
+    "Use sonner for toasts. Sonner component is located in /app/src/components/ui/sonner.jsx or .tsx."
+  ]
+}

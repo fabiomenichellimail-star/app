@@ -1,0 +1,33 @@
+{
+  "summary": "Verified zero-tolerance quadratura logic in Registro Corrispettivi backend. Ran unit tests (/app/backend/test_logic.py) printing 'ALL ZERO-TOLERANCE QUADRATURA TESTS PASSED'. Added API-level pytest suite /app/backend/tests/test_quadratura.py covering diff 0/+1/-1 cent, 6-reparti acceptance test, and OCR Controllo A against /app/test_assets/reparti.jpg. All 5 tests pass against the real backend URL (REACT_APP_BACKEND_URL). Reconciliation returns VERIFICATO only when difference == 0 exactly; +1 and -1 cent correctly return NON_QUADRATO. departments_total_cents and difference_cents are strict Python ints (no floats). OCR reparti returned lines_sum_cents=275740 and printed_total_cents=275740 (exact match at cent). Temporary registers created and cleaned up via DELETE.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_quadratura.py",
+    "/app/backend/test_logic.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py is ~685 lines — borderline, consider splitting into routers (registers, columns, entries, ocr, export) if it grows further.",
+    "compute_reconciliation correctly uses integer arithmetic only; difference_cents is int, status gated on diff == 0 exactly (no epsilon). Good.",
+    "OCR endpoint returns lines_sum_cents computed server-side as sum of ints — correct and matches Controllo A requirement."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_quadratura.py (new)"
+  ],
+  "success_rate": {"backend": "100% (5/5 API tests + unit tests)", "frontend": "not tested (backend only)"},
+  "test_credentials": "n/a",
+  "seed_data_creation": "Two temporary registers created and deleted during tests (TEST_QUADRATURA, TEST_QUADRATURA_6).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Quadratura logic verified end-to-end with zero tolerance. Reparti OCR against /app/test_assets/reparti.jpg returns exact 275740 on both lines_sum_cents and printed_total_cents. Timeout 120s sufficient for Gemini OCR.",
+  "rca of the issue": "No bug — logic was already correct. Confirmed exact-cent integer arithmetic throughout: parse_amount_to_cents returns int, compute_reconciliation does int subtraction, status mapping uses difference == 0 without any epsilon/tolerance."
+}

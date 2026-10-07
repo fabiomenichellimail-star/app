@@ -1,0 +1,27 @@
+{
+  "summary": "Frontend end-to-end testing of multi-azzeramento + CameraCapture overlay for Registro Corrispettivi. Executed full UI flow via Playwright against the preview URL. Created a test register (TEST_MultiZ UI) with 1 column (Unico/U), then exercised: open CameraCapture overlay from read-azzeramento-btn, headless-fallback upload via hidden z-file-input (/app/test_assets/azzeramento.jpg), real Gemini OCR -> azzeramento 1 read (2.757,40 ~5s). Re-open overlay, upload same asset -> azzeramento 2 added. Reparti OCR via rep-file-input (/app/test_assets/reparti.jpg) succeeded. On confirm step both z-report-0 and z-report-1 are listed, each editable; z-total correctly shows € 5514,80 and the quadratura-card displays 'Totale corrispettivi (azzeramenti)' = somma. Deleting z-report-delete-1 immediately recalculated z-total to € 2757,40. Manual add via confirm-add-azz-manual + typing 100,00 -> z-total € 2857,40. Save produced exactly ONE row per data in the register (verified both in UI and via GET /api/registers/{id}/entries: single entry with 2 z_reports, total_receipts_cents = 285740). Duplicate-date flow: new-day -> manual-entry -> add 50,00 -> same date -> save triggered duplicate-dialog with the exact text 'aggiungere questo azzeramento alla giornata esistente' and all three testids (dup-add-azz-btn, dup-open-existing-btn, dup-cancel-btn) present; clicking dup-add-azz-btn merged the azzeramento into the existing entry (3 z_reports, total € 2907,40, still ONE row). Edit flow (edit-entry-<id>) correctly loaded all 3 z_reports; deleting the last and PUT-saving recomputed total to € 2857,40 and preserved one row. Exports: GET /api/registers/{id}/export/pdf -> 200 (2112 bytes), /export/excel -> 200 (5852 bytes). Excel sheet 'Registro' shows a single 'Totale Corrispettivi' column with value 2857.40 (aggregated), no 'Azzeramento 1/2' columns. CameraCapture overlay shows 'Posiziona lo scontrino dentro il riquadro'; camera-close-btn closes the overlay; camera-gallery-btn present and clickable. OCR models (gemini-3-flash/pro) confirmed via toast strings. Cleanup: test register deleted (DELETE 200).",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_quadratura.py (prev)",
+    "/app/test_reports/pytest/pytest_results.xml (prev)"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "NewDay.jsx: runAzz uses setDate(d.date) only when zReports.length === 0 at the time of invocation (stale closure risk since this runs after setZReports append). Works today because initial render has length 0 and OCR runs sequentially, but worth refactoring to functional setDate or inside the setter.",
+    "CameraCapture: the hidden <input type=file> remains mounted even in error state, which is intentional and makes the gallery fallback work in headless/no-webcam environments — good.",
+    "RegisterView export URL path is /export/{kind}; keeping it consistent in docs/tests."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "n/a (previously 100%)", "frontend": "100% (all scripted flows passed)" },
+  "test_credentials": "n/a (no auth)",
+  "seed_data_creation": "Created and deleted one test register TEST_MultiZ UI (fc39b8e2-e921-4e1a-910f-303599609c00) during the run.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Camera overlay uses hidden file inputs with data-testid z-file-input and rep-file-input which Playwright can target directly with set_input_files even without a visible gallery click. OCR calls take ~5-15s per image via real Gemini; use timeouts >=60s. Exports are at /api/registers/{id}/export/pdf and /export/excel (not .pdf/.excel).",
+  "rca of the issue": "No defects observed. Multi-azzeramento (totale = somma di tutti gli azzeramenti, UNA sola riga per data), ricalcolo immediato su delete/manual-add, duplicate-dialog con add-to-existing, edit mode con PUT, export aggregato e Camera overlay con fallback galleria funzionano come previsto."
+}

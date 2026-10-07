@@ -98,12 +98,13 @@ export default function NewDay() {
     try {
       const res = await api.post(`/registers/${id}/ocr/azzeramento`, { image_base64: imageB64 });
       const d = res.data;
-      const warn = (d.confidence || 0) < 0.7 || d.total_daily_receipts_cents == null;
-      setZReports((p) => [...p, {
-        amountStr: d.total_daily_receipts_cents != null ? formatCents(d.total_daily_receipts_cents) : "",
-        confidence: d.confidence, detected_date: d.date,
-      }]);
-      if (d.date && zReports.length === 0) setDate(d.date);
+      setZReports((p) => {
+        if (d.date && p.length === 0) setDate(d.date);
+        return [...p, {
+          amountStr: d.total_daily_receipts_cents != null ? formatCents(d.total_daily_receipts_cents) : "",
+          confidence: d.confidence, detected_date: d.date,
+        }];
+      });
       if (d.total_daily_receipts_cents == null) toast.warning("Totale azzeramento non riconosciuto, inseriscilo a mano");
       else toast.success(`Azzeramento letto (${d.model}${d.fallback ? " • fallback" : ""}, ${d.elapsed_ms}ms)`);
     } catch (e) {

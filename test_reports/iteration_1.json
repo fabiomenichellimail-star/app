@@ -1,0 +1,26 @@
+{
+  "summary": "Full frontend E2E testing of REGISTRO CORRISPETTIVI app. All critical flows pass: Home navigation, Create register (6 columns, reorder up/down), OCR real Gemini (azzeramento + reparti) with correct values and VERIFICATO + diff € 0,00, manual entry producing NON_QUADRATO, duplicate-date dialog with 3 options, month tabs + totals row, edit entry with recalculated quadratura, delete entry, exports (PDF/XLSX 200 with correct magic bytes), config-columns dialog adds new column live, duplicate register (new id, 0 giornate), delete register. OCR values from backend matched the exact expected amounts (Ristorante 2353,40 / Bar 201,90 / Alim22 80,05 / Alim10 42,40 / Bombole 41,00 / Alim4 38,65; total 2757,40).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "RegisterView", "issues": ["On desktop (max-w-5xl) the register header title/menu is well laid out; however the table does not stretch and TEST_Extra column was shown but 'Stato' column badge is far right - acceptable, no action needed."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "RegisterView.saveConfig issues N sequential HTTP calls (PUT per column + POST per new + reorder). For many columns this is slow; consider batch endpoint. Minor.",
+    "On RegisterView initial load, selMonth defaults to last-entry month only if selMonth is null; this is fine but after save-and-return it re-mounts and may show empty month until data loads (slight flash). Minor UX.",
+    "Export URLs served via /api/... prefix work (PDF/XLSX). 403 observed only when calling without User-Agent header; browser flows unaffected."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (not tested, per request)", "frontend": "100%"},
+  "test_credentials": "No auth required",
+  "seed_data_creation": "Created and later cleaned a TEST_Duplicated_Reg register. TEST_Registro_UI with 1 verified entry (2026-08-12) remains for reference.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All features in the review request pass. Register ID of remaining TEST data: see Home list. OCR calls take ~5-15s each; use timeout>=90s. File inputs z-file-input/rep-file-input are hidden; use set_input_files with state='attached'. Export endpoints require User-Agent header when invoked via urllib; curl/browser work fine.",
+  "rca of the issue": "No open issues."
+}

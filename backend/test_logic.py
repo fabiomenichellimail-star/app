@@ -58,3 +58,50 @@ print("reconciliation NON_QUADRATO OK")
 _, _, status3 = compute_reconciliation(columns, None, values, None)
 assert status3 == "DA_CONTROLLARE"
 print("ALL BACKEND LOGIC TESTS PASSED")
+
+# =========================================================================== #
+# Targeted zero-tolerance quadratura tests (no epsilon, exact-cent only)       #
+# =========================================================================== #
+one_col = [{"id": "x", "display_name": "Reparto", "ocr_label": "R",
+            "aliases": [], "include_in_reconciliation": True, "active": True}]
+
+# differenza 0 centesimi -> VERIFICATO
+d, diff, st = compute_reconciliation(one_col, 275740, {"x": 275740}, None)
+assert (d, diff, st) == (275740, 0, "VERIFICATO"), (d, diff, st)
+print("diff 0 -> VERIFICATO OK")
+
+# differenza +1 centesimo (reparti mancano 1 cent) -> NON_QUADRATO
+d, diff, st = compute_reconciliation(one_col, 275740, {"x": 275739}, None)
+assert (d, diff, st) == (275739, 1, "NON_QUADRATO"), (d, diff, st)
+print("diff +1 cent -> NON_QUADRATO OK")
+
+# differenza -1 centesimo (reparti in piu' di 1 cent) -> NON_QUADRATO
+d, diff, st = compute_reconciliation(one_col, 275740, {"x": 275741}, None)
+assert (d, diff, st) == (275741, -1, "NON_QUADRATO"), (d, diff, st)
+print("diff -1 cent -> NON_QUADRATO OK")
+
+# nessuna tolleranza: tutti i tipi devono essere int esatti
+assert isinstance(diff, int) and isinstance(d, int)
+
+# Controllo A: somma righe reparti vs TOT EUR stampato, esatto al centesimo
+def controllo_a(printed_total_cents, lines_cents):
+    lines_sum = sum(lines_cents)  # integer cents
+    return printed_total_cents - lines_sum
+
+assert controllo_a(275740, [235340, 20190, 8005, 4240, 4100, 3865]) == 0, "Controllo A esatto"
+assert controllo_a(275740, [235340, 20190, 8005, 4240, 4100, 3864]) == 1, "Controllo A +1"
+assert controllo_a(275740, [235340, 20190, 8005, 4240, 4100, 3866]) == -1, "Controllo A -1"
+print("Controllo A exact-cent OK")
+
+# parsing punto/virgola/migliaia -> centesimi interi esatti
+assert p("2.757,40") == 275740 and p("2,757.40") == 275740
+assert p("2757.40") == 275740 and p("2757,40") == 275740
+assert p("1.234.567,89") == 123456789  # migliaia multiple
+assert p("1,234,567.89") == 123456789
+assert isinstance(p("2.757,40"), int)
+# somma di importi parsati resta esatta (nessun float)
+total = p("2353.40") + p("201.90") + p("80.05") + p("42.40") + p("41.00") + p("38.65")
+assert total == 275740, total
+print("parsing punto/virgola/migliaia -> cent interi OK")
+
+print("ALL ZERO-TOLERANCE QUADRATURA TESTS PASSED")

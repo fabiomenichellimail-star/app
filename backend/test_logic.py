@@ -105,3 +105,38 @@ assert total == 275740, total
 print("parsing punto/virgola/migliaia -> cent interi OK")
 
 print("ALL ZERO-TOLERANCE QUADRATURA TESTS PASSED")
+
+# =========================================================================== #
+# Multi-azzeramento tests                                                      #
+# =========================================================================== #
+from server import zreports_total, build_zreports, ZReportIn
+
+# 1 azzeramento 500,00 -> 50000
+assert zreports_total([{"amount_cents": 50000}]) == 50000
+# 2 azzeramenti 500,00 + 365,58 -> 86558
+assert zreports_total([{"amount_cents": 50000}, {"amount_cents": 36558}]) == 86558
+# 3 azzeramenti, somma esatta in centesimi
+assert zreports_total([{"amount_cents": 10000}, {"amount_cents": 20000}, {"amount_cents": 5055}]) == 35055
+# nessun azzeramento -> None
+assert zreports_total([]) is None and zreports_total(None) is None
+print("multi-azzeramento sums OK")
+
+# build_zreports assegna id/order_index/timestamps e preserva created_at
+built = build_zreports([ZReportIn(amount_cents=50000), ZReportIn(amount_cents=36558)])
+assert len(built) == 2 and built[0]["order_index"] == 0 and built[1]["order_index"] == 1
+assert all(b["id"] and b["created_at"] and b["updated_at"] for b in built)
+# modifica: rimuovo il secondo -> totale ricalcolato
+assert zreports_total(built[:1]) == 50000
+print("build_zreports OK")
+
+# quadratura con totale = somma azzeramenti
+one_col2 = [{"id": "r", "display_name": "R", "ocr_label": "R", "aliases": [],
+             "include_in_reconciliation": True, "active": True}]
+total_from_z = zreports_total(built)  # 86558
+d, diff, st = compute_reconciliation(one_col2, total_from_z, {"r": 86558}, None)
+assert (diff, st) == (0, "VERIFICATO"), (diff, st)
+d, diff, st = compute_reconciliation(one_col2, total_from_z, {"r": 86557}, None)
+assert (diff, st) == (1, "NON_QUADRATO"), (diff, st)
+print("multi-azzeramento quadratura 86558 vs 86558/86557 OK")
+
+print("ALL MULTI-AZZERAMENTO TESTS PASSED")

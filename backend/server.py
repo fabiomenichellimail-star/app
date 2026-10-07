@@ -90,9 +90,17 @@ class ReorderIn(BaseModel):
     column_ids: List[str]
 
 
+class ZReportIn(BaseModel):
+    id: Optional[str] = None
+    amount_cents: Optional[int] = None
+    detected_date: Optional[str] = None
+    confidence: Optional[float] = None
+
+
 class EntryIn(BaseModel):
     business_date: str  # YYYY-MM-DD
     total_receipts_cents: Optional[int] = None
+    z_reports: Optional[List[ZReportIn]] = None  # azzeramenti della giornata
     values: Dict[str, Optional[int]] = {}  # column_id -> cents
     printed_total_cents: Optional[int] = None
     status_hint: Optional[str] = None  # DA_CONTROLLARE to force
@@ -148,6 +156,36 @@ def compute_reconciliation(columns: List[dict], total_receipts_cents, values: Di
     else:
         status = STATUS_NON_QUADRATO
     return departments_total, difference, status
+
+
+def build_zreports(items: List[ZReportIn], existing: Optional[List[dict]] = None) -> List[dict]:
+    """Normalize incoming azzeramenti into child subdocuments with stable ids,
+    order_index and timestamps. Preserves created_at for existing ids."""
+    existing_map = {z.get("id"): z for z in (existing or []) if z.get("id")}
+    out = []
+    for i, it in enumerate(items):
+        zid = it.id or str(uuid.uuid4())
+        prev = existing_map.get(zid) or {}
+        out.append({
+            "id": zid,
+            "amount_cents": it.amount_cents,
+            "detected_date": it.detected_date,
+            "confidence": it.confidence,
+            "order_index": i,
+            "created_at": prev.get("created_at", now_iso()),
+            "updated_at": now_iso(),
+        })
+    return out
+
+
+def zreports_total(zreports: Optional[List[dict]]) -> Optional[int]:
+    """Total corrispettivi = exact integer-cent sum of all azzeramenti of the day."""
+    if not zreports:
+        return None
+    vals = [int(z["amount_cents"]) for z in zreports if z.get("amount_cents") is not None]
+    if not vals:
+        return None
+    return sum(vals)
 
 
 def map_lines_to_columns(lines: List[dict], columns: List[dict]):
@@ -379,8 +417,15 @@ async def check_duplicate(register_id: str, date: str):
 async def create_entry(register_id: str, payload: EntryIn):
     await get_register_or_404(register_id)
     columns = await get_columns(register_id)
+
+    if payload.z_reports is not None:
+        zreports = build_zreports(payload.z_reports)
+        total = zreports_total(zreports)
+    else:
+        zreports = None
+        total = payload.total_receipts_cents
     departments_total, difference, status = compute_reconciliation(
-        columns, payload.total_receipts_cents, payload.values, payload.status_hint)
+        columns, total, payload.values, payload.status_hint)
 
     existing = await db.entries.find_one(
         {"register_id": register_id, "business_date": payload.business_date}, {"_id": 0})
@@ -392,7 +437,7 @@ async def create_entry(register_id: str, payload: EntryIn):
     base = {
         "register_id": register_id,
         "business_date": payload.business_date,
-        "total_receipts_cents": payload.total_receipts_cents,
+        "total_receipts_cents": total,
         "values": payload.values,
         "departments_total_cents": departments_total,
         "printed_total_cents": payload.printed_total_cents,
@@ -401,6 +446,8 @@ async def create_entry(register_id: str, payload: EntryIn):
         "ocr_raw": payload.ocr_raw,
         "updated_at": now_iso(),
     }
+    if zreports is not None:
+        base["z_reports"] = zreports
     if payload.replace_id and existing:
         await db.entries.update_one({"id": existing["id"]}, {"$set": base})
         entry_id = existing["id"]
@@ -408,6 +455,8 @@ async def create_entry(register_id: str, payload: EntryIn):
         entry_id = str(uuid.uuid4())
         base["id"] = entry_id
         base["created_at"] = now_iso()
+        if "z_reports" not in base:
+            base["z_reports"] = []
         await db.entries.insert_one(dict(base))
     await db.registers.update_one({"id": register_id}, {"$set": {"updated_at": now_iso()}})
     return clean(await db.entries.find_one({"id": entry_id}))
@@ -419,11 +468,18 @@ async def update_entry(entry_id: str, payload: EntryIn):
     if not entry:
         raise HTTPException(status_code=404, detail="Giornata non trovata")
     columns = await get_columns(entry["register_id"])
+
+    if payload.z_reports is not None:
+        zreports = build_zreports(payload.z_reports, existing=entry.get("z_reports"))
+        total = zreports_total(zreports)
+    else:
+        zreports = entry.get("z_reports")
+        total = zreports_total(zreports) if zreports else payload.total_receipts_cents
     departments_total, difference, status = compute_reconciliation(
-        columns, payload.total_receipts_cents, payload.values, payload.status_hint)
+        columns, total, payload.values, payload.status_hint)
     update = {
         "business_date": payload.business_date,
-        "total_receipts_cents": payload.total_receipts_cents,
+        "total_receipts_cents": total,
         "values": payload.values,
         "departments_total_cents": departments_total,
         "printed_total_cents": payload.printed_total_cents,
@@ -431,6 +487,8 @@ async def update_entry(entry_id: str, payload: EntryIn):
         "reconciliation_status": status,
         "updated_at": now_iso(),
     }
+    if payload.z_reports is not None:
+        update["z_reports"] = zreports
     if payload.ocr_raw is not None:
         update["ocr_raw"] = payload.ocr_raw
     await db.entries.update_one({"id": entry_id}, {"$set": update})
@@ -678,6 +736,36 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+async def migrate_zreports_on_startup():
+    """Safe, idempotent migration: every existing DailyEntry that has a
+    total_receipts_cents but no z_reports gets a single azzeramento created from
+    that total. Totals stay identical, no data is lost."""
+    try:
+        query = {"total_receipts_cents": {"$ne": None},
+                 "$or": [{"z_reports": {"$exists": False}}, {"z_reports": None}, {"z_reports": []}]}
+        migrated = 0
+        async for e in db.entries.find(query):
+            total = e.get("total_receipts_cents")
+            if total is None:
+                continue
+            z = [{
+                "id": str(uuid.uuid4()),
+                "amount_cents": int(total),
+                "detected_date": e.get("business_date"),
+                "confidence": 1.0,
+                "order_index": 0,
+                "created_at": e.get("created_at", now_iso()),
+                "updated_at": now_iso(),
+            }]
+            await db.entries.update_one({"id": e["id"]}, {"$set": {"z_reports": z}})
+            migrated += 1
+        if migrated:
+            logger.info("z_reports migration: initialized %d existing entries", migrated)
+    except Exception:
+        logger.exception("z_reports migration failed")
 
 
 @app.on_event("shutdown")

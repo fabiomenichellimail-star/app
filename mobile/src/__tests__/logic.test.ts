@@ -85,5 +85,17 @@ const zt = zreportsTotal([{ amount_cents: 50000 }, { amount_cents: 36558 }])!;
 const rz = computeReconciliation([{ id: "x", display_name: "R", ocr_label: "R", aliases: [], include_in_reconciliation: true, active: true }], zt, { x: 86558 });
 ok(rz.difference === 0 && rz.status === "VERIFICATO", "multi-azz 86558 vs 86558 -> VERIFICATO");
 
+// ---- column order + active/include flags (config acceptance) ----
+const expectedOrder = ["IVA 10% Ristorante", "IVA 10% Bar", "IVA 22% Alimentari", "IVA 10% Alimentari", "Bombole", "IVA 4% Alimentari"];
+ok(JSON.stringify(columns.map((c) => c.display_name)) === JSON.stringify(expectedOrder), "ordine colonne configurate (Data/Totale sono fisse prima)");
+// a non-included column must NOT affect the quadratura
+const withExtra = [...columns, { id: "extra", display_name: "Note (no quad)", ocr_label: "NOTE", aliases: [], include_in_reconciliation: false, active: true }];
+const rExtra = computeReconciliation(withExtra, 275740, { ...values, extra: 99999 });
+ok(rExtra.difference === 0 && rExtra.status === "VERIFICATO", "colonna non inclusa non altera la quadratura");
+// a deactivated column is excluded from reconciliation
+const withInactive = columns.map((c) => (c.id === "c5" ? { ...c, active: false } : c));
+const rInact = computeReconciliation(withInactive, 275740, values);
+ok(rInact.departmentsTotal === 275740 - 4100, "colonna disattivata esclusa dalla somma reparti");
+
 console.log(`\n=== MOBILE LOGIC: ${P} PASS / ${F} FAIL ===`);
 if (F > 0) process.exit(1);

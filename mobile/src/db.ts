@@ -169,6 +169,16 @@ export async function reorderColumns(ids: string[]) {
   }
 }
 
+// True if the column has any historical values stored (then prefer deactivation to deletion).
+export async function columnHasData(columnId: string): Promise<boolean> {
+  const db = await getDb();
+  const r = await db.getFirstAsync<any>(
+    "SELECT COUNT(*) n FROM daily_entry_values WHERE register_column_id=? AND amount_cents IS NOT NULL",
+    columnId);
+  return (r?.n ?? 0) > 0;
+}
+
+
 // ---------- Entries ----------
 async function hydrateEntry(e: any) {
   const db = await getDb();

@@ -10,6 +10,7 @@ import HomeScreen from "./src/screens/HomeScreen";
 import CreateRegisterScreen from "./src/screens/CreateRegisterScreen";
 import RegisterScreen from "./src/screens/RegisterScreen";
 import NewDayScreen from "./src/screens/NewDayScreen";
+import ConfigColumnsScreen from "./src/screens/ConfigColumnsScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -31,6 +32,7 @@ export default function App() {
             <Stack.Screen name="Create" component={CreateRegisterScreen} />
             <Stack.Screen name="Register" component={RegisterScreen} />
             <Stack.Screen name="NewDay" component={NewDayScreen} />
+            <Stack.Screen name="ConfigColumns" component={ConfigColumnsScreen} />
           </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaProvider>

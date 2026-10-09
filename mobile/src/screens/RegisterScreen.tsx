@@ -42,7 +42,8 @@ export default function RegisterScreen({ navigation, route }: any) {
     return t;
   }, [visible, active]);
 
-  const menu = () => Alert.alert("Registro", reg?.name, [
+  const menu = () => Alert.alert("Impostazioni registro", reg?.name, [
+    { text: "Gestisci colonne", onPress: () => navigation.navigate("ConfigColumns", { id }) },
     { text: "Duplica registro", onPress: dup },
     { text: "Esporta backup", onPress: () => exportBackup().catch(() => Alert.alert("Errore", "Backup non riuscito")) },
     { text: "Importa / ripristina backup", onPress: doImport },

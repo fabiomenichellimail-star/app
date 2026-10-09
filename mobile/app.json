@@ -14,10 +14,10 @@
     },
     "assetBundlePatterns": ["**/*"],
     "android": {
-      "package": "com.corrispettivi.registro",
+      "package": "it.dagiovannino.registrocorrispettivi",
       "versionCode": 1,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundColor": "#0F172A"
       },
       "permissions": ["android.permission.CAMERA"],

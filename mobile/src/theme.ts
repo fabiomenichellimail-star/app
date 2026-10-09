@@ -1,0 +1,15 @@
+export const C = {
+  bg: "#F1F5F9",
+  card: "#FFFFFF",
+  ink: "#0F172A",
+  sub: "#475569",
+  mute: "#94A3B8",
+  border: "#E2E8F0",
+  primary: "#0F172A",
+  green: "#059669",
+  greenBg: "#ECFDF5",
+  red: "#DC2626",
+  redBg: "#FEF2F2",
+  amber: "#D97706",
+  amberBg: "#FFFBEB",
+};

@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "Registro Corrispettivi",
+    "slug": "registro-corrispettivi",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0F172A"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "android": {
+      "package": "com.corrispettivi.registro",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0F172A"
+      },
+      "permissions": ["android.permission.CAMERA"],
+      "blockedPermissions": ["android.permission.INTERNET"]
+    },
+    "plugins": [
+      "expo-sqlite",
+      "expo-document-picker",
+      ["expo-camera", { "cameraPermission": "L'app usa la fotocamera per leggere gli scontrini (OCR locale). Le foto non vengono conservate." }],
+      ["expo-build-properties", { "android": { "minSdkVersion": 24 } }]
+    ]
+  }
+}
